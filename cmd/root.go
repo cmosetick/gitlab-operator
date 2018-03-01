@@ -74,3 +74,13 @@ func initOperatorConfig() {
 	operatorConfig.SetEnvPrefix("GITLAB_OPERATOR") // prefix for env vars to configure cluster
 	operatorConfig.AutomaticEnv()                  // read in environment variables that match
 }
+
+func validateArguments(cmd *cobra.Command, args []string) error {
+	s3 := operatorConfig.GetString("s3")
+	if s3 == "" {
+		ExitCode = 1
+		return fmt.Errorf("The -s option is required")
+	}
+
+	return nil
+}

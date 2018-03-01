@@ -29,6 +29,10 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 // Assumes this process is running within a pod in a k8s cluster. Returns a
@@ -214,6 +218,38 @@ func createFileFromStream(reader io.Reader, destFilename string) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func UploadToS3(s3Bucket, filename string) error {
+	fmt.Printf("Uploading %v to %v\n", filename, s3Bucket)
+
+	// The session the S3 Uploader will use
+	sess, err := session.NewSession()
+	if err != nil {
+		return err
+	}
+
+	// Create an uploader with the session and default options
+	uploader := s3manager.NewUploader(sess)
+
+	f, err := os.Open(filename)
+	if err != nil {
+		return fmt.Errorf("failed to open file %q, %v", filename, err)
+	}
+
+	// Upload the file to S3.
+	result, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(s3Bucket),
+		Key:    aws.String(filename),
+		Body:   f,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload file, %v", err)
+	}
+
+	fmt.Printf("Finished uploading to %v\n", aws.StringValue(&result.Location))
 
 	return nil
 }

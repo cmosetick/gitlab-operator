@@ -9,8 +9,15 @@ spec:
       containers:
       - name: gitlab-operator
         image: quay.io/samsung_cnct/gitlab-operator:latest
-        command: ["/gitlab-operator", "backup", "-s", "s3://cnct.io/superior/gitlab"]
+        command: ["/gitlab-operator", "backup", "-s", "superior-gitlab-backups"]
         imagePullPolicy: Always
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          value: <REDACTED>
+        - name: AWS_SECRET_ACCESS_KEY
+          value: <REDACTED>
+        - name: AWS_REGION
+          value: us-west-2
       serviceAccountName: gitlab-admin
       restartPolicy: Never
   backoffLimit: 3

@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -24,7 +23,7 @@ import (
 
 // Find the one expected pod with the label selector in this namespace and run
 // GitLab backup on it. Store the result in an s3 bucket.
-func Backup(s3 string) error {
+func Backup(s3Bucket string) error {
 	namespace, err := GetNamespace()
 	if err != nil {
 		return err
@@ -88,7 +87,10 @@ func Backup(s3 string) error {
 		return err
 	}
 
-	// TODO: Copy to S3
+	err = UploadToS3(s3Bucket, localFilename)
+	if err != nil {
+		return err
+	}
 
 	options.Command = []string{"rm", "-f", localFilename}
 	err = ExecWithOptions(options)
@@ -107,16 +109,17 @@ var backupCmd = &cobra.Command{
 	Short:        "Backs up GitLab",
 	SilenceUsage: true,
 	Long:         `Backs up a GitLab deployment and saves the state to an s3 bucket.`,
+	PreRunE:      validateArguments,
 	Run: func(cmd *cobra.Command, args []string) {
 		s3 := operatorConfig.GetString("s3")
 		err := Backup(s3)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 			ExitCode = 1
 			return
 		}
 
 		ExitCode = 0
+		return
 	},
 }
 
